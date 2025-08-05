@@ -1,0 +1,142 @@
+import React from "react";
+import FieldInputCardDetails from "./FieldInputCardDetails";
+import CardTypeSelector from "./CardTypeSelector";
+import { calculateOrder } from "./orderUtils"; // <-- import hàm tính toán
+import { Formik, Form } from "formik";
+import FormikWrapper from "./FormikWrapper";
+import Image01 from "../../assets/Image01.jpg";
+import * as Yup from "yup";
+import { formikProps } from "./FormikProps";
+import { useNavigate } from "react-router-dom";
+
+function CardDetails() {
+  const navigate = useNavigate();
+  const { initialValues, validationSchema, onSubmit } = formikProps;
+  return (
+    <div className="container py-5">
+      {" "}
+      {/* ✅ THÊM */}
+      <div className="card bg-primary text-white rounded-3 ">
+        <div className="card-body">
+          <div className="d-flex justify-content-between align-items-center mb-4">
+            <h5 className="mb-0">Your Information</h5>
+            <img
+              src={Image01}
+              className="img-fluid rounded-3"
+              style={{ width: 45 }}
+              alt="Avatar"
+            />
+          </div>
+
+          <FormikWrapper
+            initialValues={initialValues}
+            validationSchema={validationSchema}
+            onSubmit={onSubmit}
+          >
+            {({ values, errors, touched, handleChange }) => {
+              const { subtotal, shipping, total } = calculateOrder(values);
+
+              return (
+                <Form>
+                  <div className="mt-4">
+                    <FieldInputCardDetails
+                      name="cardholderName"
+                      label="Address"
+                      id="cardholderName"
+                      type="text"
+                      placeholder="Address"
+                    />
+
+                    <FieldInputCardDetails
+                      name="PhoneNumber"
+                      label="PhoneNumber"
+                      id="PhoneNumber"
+                      type="text"
+                      placeholder="PhoneNumber"
+                    />
+
+                    {/* Input Quantity */}
+                    <div className="mb-3">
+                      <label
+                        htmlFor="quantity"
+                        className="form-label text-white"
+                      >
+                        Quantity
+                      </label>
+                      <input
+                        id="quantity"
+                        name="quantity"
+                        type="number"
+                        className="form-control"
+                        min="1"
+                        value={values?.quantity || ""}
+                        onChange={handleChange}
+                      />
+                      {touched.quantity && errors.quantity ? (
+                        <div className="text-warning">{errors.quantity}</div>
+                      ) : null}
+                    </div>
+
+                    {/* Select Shipping Method */}
+                    <div className="mb-4">
+                      <label
+                        htmlFor="shippingMethod"
+                        className="form-label text-white"
+                      >
+                        Shipping Method
+                      </label>
+                      <select
+                        id="shippingMethod"
+                        name="shippingMethod"
+                        className="form-select"
+                        value={values?.shippingMethod || ""}
+                        onChange={handleChange}
+                      >
+                        <option value="standard">Standard ($10)</option>
+                        <option value="express">Express ($20)</option>
+                      </select>
+                      {touched.shippingMethod && errors.shippingMethod ? (
+                        <div className="text-warning">
+                          {errors.shippingMethod}
+                        </div>
+                      ) : null}
+                    </div>
+                  </div>
+
+                  {/* Phần tính toán subtotal, shipping, total */}
+                  <hr className="my-4" />
+                  <div className="d-flex justify-content-between">
+                    <p className="mb-2">Subtotal</p>
+                    <p className="mb-2">${subtotal.toFixed(2)}</p>
+                  </div>
+                  <div className="d-flex justify-content-between">
+                    <p className="mb-2">Shipping</p>
+                    <p className="mb-2">${shipping.toFixed(2)}</p>
+                  </div>
+                  <div className="d-flex justify-content-between mb-4">
+                    <p className="mb-2">Total (Incl. taxes)</p>
+                    <span className="mb-2">
+                      <strong>${total.toFixed(2)}</strong>
+                    </span>
+                  </div>
+
+                  <div className="d-flex justify-content-between">
+                    <button
+                      className="btn btn-info"
+                      onClick={() => navigate("/")}
+                    >
+                      <i className="fas fa-long-arrow-alt-left me-2" />
+                      Back
+                    </button>
+                  </div>
+                </Form>
+              );
+            }}
+          </FormikWrapper>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default CardDetails;
