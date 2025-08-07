@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react"; // ✅ đúng cú pháp
 import FieldInputCardDetails from "./FieldInputCardDetails";
 import CardTypeSelector from "./CardTypeSelector";
 import { calculateOrder } from "./orderUtils"; // <-- import hàm tính toán
@@ -8,10 +8,49 @@ import Image01 from "../../assets/Image01.jpg";
 import * as Yup from "yup";
 import { formikProps } from "./FormikProps";
 import { useNavigate } from "react-router-dom";
-
-function CardDetails() {
+import { useCart } from "../context/CartContext"; // ⬅️ thêm dòng này
+import ThanksToast from "../ThanksToast/ThanksToast";
+import { submitOrder } from "../../api/ordersApi";
+function AfterPay() {
   const navigate = useNavigate();
-  const { initialValues, validationSchema, onSubmit } = formikProps;
+  const { initialValues, validationSchema } = formikProps;
+  const { cartItems, clearCart } = useCart();
+  const [showThanks, setShowThanks] = useState(false);
+  const subtotalFromCart = cartItems.reduce(
+    (sum, item) => sum + item.price * item.quantity,
+    0
+  );
+  const handlePay = () => {
+    // ✅ xử lý thanh toán ở đây
+    setShowThanks(true);
+    setTimeout(() => setShowThanks(false), 3000);
+  };
+
+  const onSubmit = async (values, { resetForm }) => {
+    const { total } = calculateOrder(values);
+
+    const orderData = {
+      customer: values,
+      cart: cartItems,
+      total,
+      createdAt: new Date().toISOString(),
+    };
+
+    console.log("📦 GỬI ĐƠN HÀNG:", orderData);
+
+    try {
+      await submitOrder(orderData);
+      console.log("✅ Gửi đơn hàng thành công");
+      setShowThanks(true);
+      setTimeout(() => setShowThanks(false), 3000); // ✅ thêm timeout ở đây
+      clearCart();
+      resetForm();
+    } catch (error) {
+      alert("❌ Gửi đơn hàng thất bại!");
+      console.error("❌ Lỗi submitOrder:", error);
+    }
+  };
+
   return (
     <div className="container py-5">
       {" "}
@@ -20,6 +59,7 @@ function CardDetails() {
         <div className="card-body">
           <div className="d-flex justify-content-between align-items-center mb-4">
             <h5 className="mb-0">Your Information</h5>
+
             <img
               src={Image01}
               className="img-fluid rounded-3"
@@ -34,7 +74,15 @@ function CardDetails() {
             onSubmit={onSubmit}
           >
             {({ values, errors, touched, handleChange }) => {
-              const { subtotal, shipping, total } = calculateOrder(values);
+              // const { subtotal, shipping, total } = calculateOrder(values);
+              const subtotal = subtotalFromCart;
+              const shipping =
+                values.shippingMethod === "express"
+                  ? 20
+                  : values.shippingMethod === "standard"
+                  ? 10
+                  : 0;
+              const total = subtotal + shipping;
 
               return (
                 <Form>
@@ -55,7 +103,7 @@ function CardDetails() {
                       placeholder="PhoneNumber"
                     />
 
-                    {/* Input Quantity */}
+                    {/* Input Quantity - Tự động lấy từ giỏ hàng */}
                     <div className="mb-3">
                       <label
                         htmlFor="quantity"
@@ -68,13 +116,12 @@ function CardDetails() {
                         name="quantity"
                         type="number"
                         className="form-control"
-                        min="1"
-                        value={values?.quantity || ""}
-                        onChange={handleChange}
+                        value={cartItems.reduce(
+                          (sum, item) => sum + item.quantity,
+                          0
+                        )}
+                        readOnly
                       />
-                      {touched.quantity && errors.quantity ? (
-                        <div className="text-warning">{errors.quantity}</div>
-                      ) : null}
                     </div>
 
                     {/* Select Shipping Method */}
@@ -128,15 +175,25 @@ function CardDetails() {
                       <i className="fas fa-long-arrow-alt-left me-2" />
                       Back
                     </button>
+                    <button
+                      type="submit"
+                      className="btn btn-info"
+                      onClick={handlePay}
+                    >
+                      <i className="fas fa-credit-card me-2" />
+                      Submit Payment
+                    </button>
                   </div>
                 </Form>
               );
             }}
           </FormikWrapper>
+          {/* ✅ Popup cảm ơn */}
+          <ThanksToast show={showThanks} onClose={() => setShowThanks(false)} />
         </div>
       </div>
     </div>
   );
 }
 
-export default CardDetails;
+export default AfterPay;

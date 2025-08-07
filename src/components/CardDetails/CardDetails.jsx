@@ -8,10 +8,29 @@ import Image01 from "../../assets/Image01.jpg";
 import * as Yup from "yup";
 import { formikProps } from "./FormikProps";
 import { useNavigate } from "react-router-dom";
-
+import { useCart } from "../context/CartContext"; // ⬅️ thêm dòng này
 function CardDetails() {
   const navigate = useNavigate();
-  const { initialValues, validationSchema, onSubmit } = formikProps;
+  const { cartItems, clearCart } = useCart();
+  const { initialValues, validationSchema } = formikProps;
+  const subtotalFromCart = cartItems.reduce(
+    (sum, item) => sum + item.price * item.quantity,
+    0
+  );
+  const onSubmit = (values, { resetForm }) => {
+    const { total } = calculateOrder(values);
+    const payload = {
+      customer: values,
+      cart: cartItems,
+      total,
+    };
+
+    console.log("🚀 Gửi đơn hàng:", payload);
+    alert("✅ Đặt hàng thành công!");
+
+    clearCart();
+    resetForm();
+  };
   return (
     <div className="container py-5">
       {" "}
@@ -49,8 +68,15 @@ function CardDetails() {
             onSubmit={onSubmit}
           >
             {({ values, errors, touched, handleChange }) => {
-              const { subtotal, shipping, total } = calculateOrder(values);
-
+              // const { subtotal, shipping, total } = calculateOrder(values);
+              const subtotal = subtotalFromCart;
+              const shipping =
+                values.shippingMethod === "express"
+                  ? 20
+                  : values.shippingMethod === "standard"
+                  ? 10
+                  : 0;
+              const total = subtotal + shipping;
               return (
                 <Form>
                   <div className="mt-4">
@@ -92,7 +118,7 @@ function CardDetails() {
                     </div>
 
                     {/* Input Quantity */}
-                    <div className="mb-3">
+                    {/* <div className="mb-3">
                       <label
                         htmlFor="quantity"
                         className="form-label text-white"
@@ -111,6 +137,26 @@ function CardDetails() {
                       {touched.quantity && errors.quantity ? (
                         <div className="text-warning">{errors.quantity}</div>
                       ) : null}
+                    </div> */}
+                    {/* Input Quantity - Tự động lấy từ giỏ hàng */}
+                    <div className="mb-3">
+                      <label
+                        htmlFor="quantity"
+                        className="form-label text-white"
+                      >
+                        Quantity
+                      </label>
+                      <input
+                        id="quantity"
+                        name="quantity"
+                        type="number"
+                        className="form-control"
+                        value={cartItems.reduce(
+                          (sum, item) => sum + item.quantity,
+                          0
+                        )}
+                        readOnly
+                      />
                     </div>
 
                     {/* Select Shipping Method */}
