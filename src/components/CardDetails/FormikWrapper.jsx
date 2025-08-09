@@ -1,3 +1,6 @@
+// ===============================
+// ***** Đưa dữ liệu lên Api *****
+
 import React from "react";
 import { Formik } from "formik";
 
@@ -13,7 +16,7 @@ function FormikWrapper({
       validationSchema={validationSchema}
       onSubmit={onSubmit}
     >
-      {children}
+      {(formikProps) => children(formikProps)}
     </Formik>
   );
 }
